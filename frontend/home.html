@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home - ReviseX</title>
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
+      background: #f6f6fb;
+    }
+    .home-wrap {
+      max-width: 580px;
+      margin: 0 auto;
+      padding-top: 3.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .home-title {
+      font-size: 2.35rem;
+      font-weight: 700;
+      color: #21223a;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.7rem;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .home-subtitle {
+      text-align: center;
+      font-size: 1.08rem;
+      color: #9493b7;
+      margin-bottom: 2.3rem;
+      font-weight: 450;
+    }
+    .upload-box {
+      width: 580px;
+      min-height: 310px;
+      border: 2.2px dashed #d9d5ef;
+      border-radius: 16px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 2.6rem;
+      padding: 3.7rem 1.5rem 3.1rem 2.5rem;
+      box-sizing: border-box;
+      transition: border-color 0.18s, background 0.15s;
+      position: relative;
+    }
+    .upload-box.dragover {
+      border-color: #bcb0fa;
+      background: #f4f0fa;
+    }
+    .upload-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .upload-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .upload-label {
+      font-size: 1.13rem;
+      color: #21223a;
+      margin-bottom: 0.13rem;
+    }
+    .upload-support {
+      font-size: 0.96rem;
+      color: #a7a6c0;
+      margin-bottom: 1.09rem;
+    }
+    .upload-btn {
+      background: #ede9fe;
+      color: #5f41c5;
+      border: none;
+      padding: 0.68rem 1.6rem;
+      border-radius: 10px;
+      font-size: 1.09rem;
+      font-weight: bold;
+      box-shadow: 0 2px 6px #ede9fe44;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .upload-btn:hover, .upload-btn:focus {
+      background: #e4e0f3;
+      color: #38208c;
+      outline: none;
+    }
+    .upload-fileinfo {
+      margin-top: 1rem;
+      color: #6c47d9;
+      font-size: 1.01rem;
+      min-height: 1.2em;
+    }
+    .hero-btn {
+      background: linear-gradient(90deg, #c4b8fb 0%, #8b6ee9 48%, #a88ef7 100%);
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 13px;
+      font-size: 1.18rem;
+      letter-spacing: 0.01em;
+      width: 340px;
+      padding: 1rem 0;
+      margin-top: 0.9rem;
+      box-shadow: 0 1.5px 12px rgba(162,144,242,0.07);
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .hero-btn:disabled {
+      background: #f0ecfd;
+      color: #bcb0fa;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    @media (max-width: 650px) {
+      .home-wrap { max-width: 97vw; padding: 1rem; }
+      .upload-box { width: 99vw; max-width: 98vw; padding: 1.3rem 0.5rem; }
+      .hero-btn { width: 90vw; font-size: 1rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="home-wrap">
+    <h1 class="home-title">Transform Your Documents into<br>Knowledge</h1>
+    <div class="home-subtitle">Upload a PDF or image to generate Q&A pairs automatically.</div>
+
+    <div class="upload-box" id="uploadBox">
+      <div class="upload-icon">
+        <svg width="40" height="40" fill="none" stroke="#9D91E5" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+
+      <div class="upload-main">
+        <div class="upload-label"><strong>Drag & Drop File Here</strong></div>
+        <div class="upload-support">Supports: PDF, PNG, JPG (max 20MB)</div>
+        <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none" />
+        <button type="button" class="upload-btn" id="browseBtn">Browse Files</button>
+        <div class="upload-fileinfo" id="fileInfo"></div>
+      </div>
+    </div>
+
+    <button class="hero-btn" id="generateBtn" disabled>
+      <span id="generateText">✨ Generate Q&A Pairs</span>
+    </button>
+  </div>
+
+  <script>
+    const uploadBox = document.getElementById('uploadBox');
+    const fileInput = document.getElementById('fileInput');
+    const browseBtn = document.getElementById('browseBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const generateBtn = document.getElementById('generateBtn');
+    const generateText = document.getElementById('generateText');
+
+    let selectedFile = null;
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+
+    function resetSelection() {
+      selectedFile = null;
+      fileInfo.textContent = '';
+      generateBtn.disabled = true;
+    }
+
+    function setSelectedFile(file) {
+      if (!validTypes.includes(file.type)) {
+        fileInfo.textContent = 'Invalid file type.';
+        fileInfo.style.color = '#e02d2d';
+        generateBtn.disabled = true;
+        return;
+      }
+      selectedFile = file;
+      fileInfo.textContent = file.name;
+      fileInfo.style.color = '#6c47d9';
+      generateBtn.disabled = false;
+    }
+
+    uploadBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadBox.classList.add('dragover');
+    });
+
+    uploadBox.addEventListener('dragleave', () => {
+      uploadBox.classList.remove('dragover');
+    });
+
+    uploadBox.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadBox.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) setSelectedFile(file);
+    });
+
+    browseBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) setSelectedFile(fileInput.files[0]);
+    });
+
+    generateBtn.addEventListener('click', async () => {
+      if (!selectedFile) {
+        fileInfo.textContent = 'Select a file first.';
+        fileInfo.style.color = '#e02d2d';
+        return;
+      }
+      generateBtn.disabled = true;
+      generateText.textContent = '⏳ Generating...';
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        const response = await fetch('http://localhost:5000/generate', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to generate Q&A pairs');
+        }
+        
+        const data = await response.json();
+        
+        // Store the results in sessionStorage for the results page
+        sessionStorage.setItem('qaResults', JSON.stringify(data));
+        
+        window.location.href = 'results.html';
+      } catch (error) {
+        fileInfo.textContent = 'Error: ' + error.message;
+        fileInfo.style.color = '#e02d2d';
+        generateBtn.disabled = false;
+        generateText.textContent = '✨ Generate Q&A Pairs';
+      }
+    });
+  </script>
+
+</body>
+</html>

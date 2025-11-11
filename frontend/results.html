@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Results - ReviseX</title>
+<style>
+/* ------------------ CSS FROM results.css ------------------ */
+body, html { background: #f6f6fb; margin: 0; padding: 0; font-family: 'Segoe UI','Inter',Arial,sans-serif; }
+.results-wrap { padding-top: 2.2rem; max-width: 820px; margin: 0 auto; }
+.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+.results-back { color: #6e44fd; font-weight: 600; font-size: 1rem; text-decoration: none; cursor: pointer; transition: color .16s; }
+.results-back:hover { color: #352883; text-decoration: underline; }
+.results-actions { display: flex; gap: 1rem; align-items: center; }
+.results-act { font-weight: 600; font-size: 1rem; border-radius: 10px; padding: 0.64rem 1.4rem; cursor: pointer; border: none; transition: background .15s,color .15s,box-shadow .13s; box-shadow: 0 1px 9px #d1bce940; display: inline-flex; align-items: center; }
+.results-outline { background: #fff; color: #6e44fd; border: 1.5px solid #e0dafd; }
+.results-outline:hover { background: #ede9fe; color: #3c2a8a; }
+.results-download { background: linear-gradient(87deg,#805bfa 0%,#a68cf7 100%); color: #fff; box-shadow: 0 4px 17px #ad9efc1a; }
+.results-download:hover { background: linear-gradient(87deg,#6e44fd 50%,#805bfa 100%); }
+.results-title { font-size: 2.25rem; font-weight: 800; color: #6e44fd; margin-bottom: 0.2rem; text-align: center; }
+.results-desc { color: #9997b1; font-size: 1.1rem; font-weight: 500; text-align: center; margin-bottom: 2rem; }
+#qaCardsContainer { display: flex; flex-direction: column; gap: 1.25rem; }
+.results-card { background: #fff; border-radius: 20px; box-shadow: 0 6px 26px #8b6ee916,0 1.8px 9px #c8baf82a; padding: 2rem 2.1rem 1.3rem 2.1rem; margin: 0 auto; max-width: 650px; width: 100%; display: flex; flex-direction: column; }
+.card-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.45rem; }
+.card-number { min-width: 38px; min-height: 38px; background: #886afc; color: #fff; font-weight: 700; font-size: 1.17rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1.5px 8px #cabafd33; }
+.card-title { font-weight: bold; font-size: 1.14rem; color: #352883; }
+.card-question { font-weight: 500; font-size: 1.06rem; color: #161a2f; margin-bottom: 0.7rem; }
+.answer-btn { border: 1.5px solid #e2dff1; background: #fff; color: #191722; padding: 0.62rem 1.08rem; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background .13s,border-color .13s,color .13s; margin-top: 0.4rem; }
+.answer-btn:hover { background: #f2ecfa; color: #6e44fd; border-color: #cfc1fa; }
+.answer-box { margin-top: 0.5rem; background: #f3f0fa; border-left: 4px solid #8666fd; border-radius: 7px; padding: 1rem 1.2rem; font-size: 1.03rem; color: #292356; }
+@media(max-width:820px){ .results-wrap{padding-top:1.3rem;} .results-card{padding:1.3rem 0.7rem;} }
+</style>
+</head>
+<body>
+<div class="results-wrap">
+  <div class="results-header">
+    <div><a class="results-back" id="backBtn">&larr; Back to Upload</a></div>
+    <div class="results-actions">
+      <button class="results-act results-outline" id="regenerateBtn">Regenerate</button>
+      <button class="results-act results-download" id="downloadBtn">Download All</button>
+    </div>
+  </div>
+  <div class="results-center">
+    <h1 class="results-title">Generated Q&A Pairs</h1>
+    <div class="results-desc" id="qaCount"></div>
+    <div id="qaCardsContainer"></div>
+  </div>
+</div>
+<script>
+/* ------------------ JS FROM results.js ------------------ */
+let qaPairs = [];
+const container=document.getElementById('qaCardsContainer');
+const qaCount=document.getElementById('qaCount');
+const backBtn=document.getElementById('backBtn');
+const regenerateBtn=document.getElementById('regenerateBtn');
+const downloadBtn=document.getElementById('downloadBtn');
+let revealed=new Set();
+
+// Load results from sessionStorage and parse them
+function loadResults() {
+  const storedData = sessionStorage.getItem('qaResults');
+  if (storedData) {
+    const data = JSON.parse(storedData);
+    const resultText = data.results || '';
+    
+    // Extract JSON from the response text
+    const jsonMatch = resultText.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Convert from API format (q, a) to card format (question, answer)
+        qaPairs = parsed.map((item, idx) => ({
+          id: idx + 1,
+          question: item.q || item.question || '',
+          answer: item.a || item.answer || ''
+        }));
+      } catch (e) {
+        console.error('Failed to parse Q&A pairs:', e);
+        qaCount.textContent = 'Error parsing results.';
+        return;
+      }
+    }
+  }
+}
+
+function createCard(pair,idx){
+  const card=document.createElement('div'); card.className='results-card';
+  const head=document.createElement('div'); head.className='card-head';
+  const num=document.createElement('div'); num.className='card-number'; num.textContent=idx+1;
+  const title=document.createElement('div'); title.className='card-title'; title.textContent='Question';
+  head.appendChild(num); head.appendChild(title);
+  const q=document.createElement('div'); q.className='card-question'; q.textContent=pair.question;
+  card.appendChild(head); card.appendChild(q);
+  if(!revealed.has(pair.id)){
+    const btn=document.createElement('button'); btn.className='answer-btn'; btn.textContent='Answer';
+    btn.onclick=()=>{ revealed.add(pair.id); renderCards(); };
+    card.appendChild(btn);
+  } else {
+    const ans=document.createElement('div'); ans.className='answer-box'; ans.textContent=pair.answer;
+    card.appendChild(ans);
+  }
+  return card;
+}
+
+function renderCards(){ container.innerHTML=''; qaPairs.forEach((p,i)=>container.appendChild(createCard(p,i))); }
+
+backBtn.onclick=()=>window.location.href='home.html';
+
+regenerateBtn.onclick=()=>{ regenerateBtn.disabled=true; regenerateBtn.textContent='Regenerating...'; setTimeout(()=>{ revealed.clear(); renderCards(); regenerateBtn.disabled=false; regenerateBtn.textContent='Regenerate'; },2000); };
+
+downloadBtn.onclick=()=>{ let text=''; qaPairs.forEach((p,i)=>text+=`${i+1}. Q: ${p.question}\nA: ${p.answer}\n\n`); const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='qa-pairs.txt'; a.click(); URL.revokeObjectURL(url); };
+
+// Initialize
+loadResults();
+qaCount.textContent=`${qaPairs.length} questions generated from your document.`;
+renderCards();
+</script>
+</body>
+</html>
